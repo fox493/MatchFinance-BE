@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import puppeteer from 'puppeteer';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AprService {
     return this.apyData;
   }
 
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async fetchApyData() {
     const browser = await puppeteer.launch({ headless: 'new' });
 
