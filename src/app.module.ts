@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContractService } from './contract/contract.service';
 import { AccountPoints } from './apis/airdrop/entities/account_points.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AprModule } from './apr/apr.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     ScheduleModule.forRoot(),
     AirdropModule,
+    AprModule,
   ],
   controllers: [],
   providers: [ContractService],
