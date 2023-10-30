@@ -28,7 +28,7 @@ export class AprService {
 
     await page.waitForSelector('.index_aprSpan__nVgD0');
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 15000));
 
     Logger.log('[Cron-async-apy] Start sync apy data');
     const apy = await page.evaluate(() => {
@@ -43,7 +43,7 @@ export class AprService {
 
     await page.waitForSelector('.css-9on69b');
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 15000));
 
     const uniswap_info = await page.evaluate(() => {
       const elements = document.querySelectorAll('.css-9on69b');

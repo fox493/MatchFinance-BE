@@ -252,7 +252,7 @@ export class AirdropService {
           0 - account.lp_withdrew ||
           0;
         const tvlFactor = this.getTVLFactor(account.tvl);
-        account.points = account.points * tvlFactor;
+        account.points = account.points * tvlFactor * 0.1;
       }
       // 6. 保存用户数据
       this.accountPointsRepository.save(accounts);
