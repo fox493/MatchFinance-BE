@@ -34,13 +34,13 @@ import { CryptoModule } from './crypto/crypto.module';
         };
       },
     }),
-    JwtModule.register({
-      global: true,
-      secret: 'multiverse-savior',
-      signOptions: {
-        expiresIn: '7d',
-      },
-    }),
+    // JwtModule.register({
+    //   global: true,
+    //   secret: 'multiverse-savior',
+    //   signOptions: {
+    //     expiresIn: '7d',
+    //   },
+    // }),
     ScheduleModule.forRoot(),
     AirdropModule,
     AprModule,
