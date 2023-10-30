@@ -39,4 +39,10 @@ export class AccountPoints {
 
   @Column({ type: 'int', default: 0 })
   points: number;
+
+  @Column({type: 'double'})
+  tvl_factor: number;
+
+  @Column({type: 'double'})
+  time_factor: number;
 }

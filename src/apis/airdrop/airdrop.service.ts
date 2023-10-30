@@ -170,12 +170,14 @@ export class AirdropService {
               account.points = account.points
                 ? account.points + points
                 : points;
+              account.time_factor = timeFactor;
             } else {
               const timeFactor = this.getTimeFactor(now - airdrop_start_time);
               const points = supplied * timeFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
+              account.time_factor = timeFactor;
             }
           }
         } else {
@@ -187,10 +189,12 @@ export class AirdropService {
             const timeFactor = this.getTimeFactor(now - timestamp);
             const points = supplied * timeFactor;
             newAccount.points = points;
+            newAccount.time_factor = timeFactor;
           } else {
             const timeFactor = this.getTimeFactor(now - airdrop_start_time);
             const points = supplied * timeFactor;
             newAccount.points = points;
+            newAccount.time_factor = timeFactor;
           }
           accounts.push(newAccount);
         }
@@ -218,12 +222,14 @@ export class AirdropService {
               account.points = account.points
                 ? account.points + points
                 : points;
+              account.time_factor = timeFactor;
             } else {
               const timeFactor = this.getTimeFactor(now - airdrop_start_time);
               const points = staked * timeFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
+              account.time_factor = timeFactor;
             }
           }
         } else {
@@ -235,10 +241,12 @@ export class AirdropService {
             const timeFactor = this.getTimeFactor(now - timestamp);
             const points = staked * timeFactor;
             newAccount.points = points;
+            newAccount.time_factor = timeFactor;
           } else {
             const timeFactor = this.getTimeFactor(now - airdrop_start_time);
             const points = staked * timeFactor;
             newAccount.points = points;
+            newAccount.time_factor = timeFactor;
           }
           accounts.push(newAccount);
         }
@@ -253,6 +261,7 @@ export class AirdropService {
           0;
         const tvlFactor = this.getTVLFactor(account.tvl);
         account.points = account.points * tvlFactor * 0.1;
+        account.tvl_factor = tvlFactor;
       }
       // 6. 保存用户数据
       this.accountPointsRepository.save(accounts);
