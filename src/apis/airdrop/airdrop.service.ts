@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ContractService } from 'src/contract/contract.service';
 import axios from 'axios';
 import { ethers } from 'ethers';
@@ -6,6 +6,7 @@ import { AccountPoints } from './entities/account_points.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ReferralEntity } from '../referral/entitites/referral.entity';
 
 @Injectable()
 export class AirdropService {
@@ -13,6 +14,8 @@ export class AirdropService {
     private readonly contractService: ContractService,
     @InjectRepository(AccountPoints)
     private readonly accountPointsRepository: Repository<AccountPoints>,
+    @InjectRepository(ReferralEntity)
+    private readonly referralRepository: Repository<ReferralEntity>,
   ) {
     this.syncAccountPoints();
   }
@@ -263,8 +266,21 @@ export class AirdropService {
         account.points = account.points * tvlFactor * 0.1;
         account.tvl_factor = tvlFactor;
       }
-      // 6. 保存用户数据
-      this.accountPointsRepository.save(accounts);
+      // 6. 统计用户邀请得分
+      const referralList = await this.referralRepository.find();
+      referralList.forEach((referral) => {
+        const referrer = accounts.find(
+          (account) => account.address === referral.referer_address,
+        );
+        const referred = accounts.find(
+          (account) => account.address === referral.referred_address,
+        );
+        if(!referrer || !referred) return;
+        referrer.points += referred.points * 0.1;
+        referrer.referral_points += referred.points * 0.1;
+      });
+      // 7. 保存用户数据
+      await this.accountPointsRepository.save(accounts);
     } catch (error) {
       Logger.error('sync account points failed', error);
     } finally {
