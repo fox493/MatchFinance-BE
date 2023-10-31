@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AirdropModule } from './apis/airdrop/airdrop.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +8,11 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AprModule } from './apis/apr/apr.module';
 import { ReferralModule } from './apis/referral/referral.module';
 import { CryptoModule } from './crypto/crypto.module';
+import { AuthModule } from './apis/auth/auth.module';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import { TransformInterceptor } from './interceptors';
+import { HttpExceptionFilter } from './filters/http-execption.filter';
 
 @Module({
   imports: [
@@ -34,20 +39,35 @@ import { CryptoModule } from './crypto/crypto.module';
         };
       },
     }),
-    // JwtModule.register({
-    //   global: true,
-    //   secret: 'multiverse-savior',
-    //   signOptions: {
-    //     expiresIn: '7d',
-    //   },
-    // }),
+    JwtModule.register({
+      global: true,
+      secret: 'match-finance-0x1',
+      signOptions: {
+        expiresIn: '7d',
+      },
+    }),
     ScheduleModule.forRoot(),
     AirdropModule,
     AprModule,
     ReferralModule,
     CryptoModule,
+    AuthModule,
   ],
   controllers: [],
-  providers: [ContractService],
+  providers: [
+    ContractService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_PIPE,
+      useClass: ValidationPipe,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}
