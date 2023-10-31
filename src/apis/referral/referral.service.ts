@@ -3,6 +3,7 @@ import { ReferralDto } from './dto/referral.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ReferralEntity } from './entitites/referral.entity';
 import { Repository } from 'typeorm';
+import { ethers } from 'ethers';
 
 @Injectable()
 export class ReferralService {
@@ -12,15 +13,15 @@ export class ReferralService {
   ) {}
 
   async referralUser(data: ReferralDto) {
-    if (!data.referer_address || !data.referred_address) {
-      throw new HttpException(
-        'Missing referer_address or referred_address',
-        400,
-      );
+    if (
+      data.refererAddress.toLowerCase() === data.referredAddress.toLowerCase()
+    ) {
+      throw new HttpException('Invalid referral address', 400);
     }
     const newReferral = this.referralRepository.create();
-    newReferral.referer_address = data.referer_address;
-    newReferral.referred_address = data.referred_address;
-    return this.referralRepository.save(newReferral);
+    newReferral.referer_address = ethers.getAddress(data.refererAddress);
+    newReferral.referred_address = ethers.getAddress(data.referredAddress);
+    await this.referralRepository.save(newReferral);
+    return 'Referral relationship created';
   }
 }

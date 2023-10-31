@@ -1,4 +1,9 @@
+import { IsNotEmpty } from 'class-validator';
+
 export class ReferralDto {
-  referer_address: string;
-  referred_address: string;
+  @IsNotEmpty()
+  refererAddress: string;
+
+  @IsNotEmpty()
+  referredAddress: string;
 }
