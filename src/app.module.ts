@@ -4,8 +4,8 @@ import { AirdropModule } from './apis/airdrop/airdrop.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContractService } from './contract/contract.service';
 import { AccountPoints } from './apis/airdrop/entities/account_points.entity';
-import { ScheduleModule } from '@nestjs/schedule';
 import { AprModule } from './apis/apr/apr.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ReferralModule } from './apis/referral/referral.module';
 import { CryptoModule } from './crypto/crypto.module';
 import { AuthModule } from './apis/auth/auth.module';
@@ -13,6 +13,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { TransformInterceptor } from './interceptors';
 import { HttpExceptionFilter } from './filters/http-execption.filter';
+import { UserDataModule } from './apis/user-data/user-data.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { HttpExceptionFilter } from './filters/http-execption.filter';
     ReferralModule,
     CryptoModule,
     AuthModule,
+    UserDataModule,
   ],
   controllers: [],
   providers: [
