@@ -16,18 +16,21 @@ import { AuthorziedRequest } from 'src/types/auth';
 export class ReferralController {
   constructor(private readonly referralService: ReferralService) {}
 
+  @Post('/code')
+  @UseGuards(LoginGuard)
+  async generateReferralCode(@Request() req: AuthorziedRequest) {
+    return this.referralService.getReferralCode(req.user.public_address);
+  }
+
   @Post('/')
   @UseGuards(LoginGuard)
   async referralUser(
     @Body(ValidationPipe) data: ReferralDto,
     @Request() req: AuthorziedRequest,
   ) {
-    if (
-      req.user.public_address.toLowerCase() !==
-      data.referredAddress.toLowerCase()
-    ) {
-      throw new Error('Invalid referral address');
-    }
-    return this.referralService.referralUser(data);
+    return this.referralService.referralUser(
+      data.referralCode,
+      req.user.public_address,
+    );
   }
 }
