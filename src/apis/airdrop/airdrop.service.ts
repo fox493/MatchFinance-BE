@@ -275,11 +275,17 @@ export class AirdropService {
         const referred = accounts.find(
           (account) => account.address === referral.referred_address,
         );
-        if(!referrer || !referred) return;
+        if (!referrer || !referred) return;
         referrer.points += referred.points * 0.1;
         referrer.referral_points += referred.points * 0.1;
       });
-      // 7. 保存用户数据
+      // 7. 计算用户rank得分
+      accounts.sort((a, b) => b.points - a.points);
+      accounts.forEach((account, index) => {
+        account.rank_factor = this.getRankFactor(index);
+        account.points = account.points * account.rank_factor;
+      });
+      // 8. 保存用户数据
       await this.accountPointsRepository.save(accounts);
     } catch (error) {
       Logger.error('sync account points failed', error);
@@ -323,7 +329,7 @@ export class AirdropService {
   // 获取时间因子，传入秒数
   getTimeFactor(time: number) {
     const day = 24 * 60 * 60;
-    if (time >= 15 * day) {
+    if (time >= 15 * day && time < 30 * day) {
       return 1.1;
     } else if (time >= 30 * day) {
       return 1.2;
@@ -333,12 +339,24 @@ export class AirdropService {
   }
 
   getTVLFactor(tvl: number) {
-    if (tvl >= 10000) {
+    if (tvl >= 10000 && tvl < 50000) {
       return 1.1;
-    } else if (tvl >= 50000) {
+    } else if (tvl >= 50000 && tvl < 200000) {
       return 1.2;
     } else if (tvl >= 200000) {
       return 1.4;
+    } else {
+      return 1;
+    }
+  }
+
+  getRankFactor(rank: number) {
+    if (rank <= 4) {
+      return 1.3;
+    } else if (rank > 4 && rank <= 9) {
+      return 1.2;
+    } else if (rank > 9 && rank <= 19) {
+      return 1.1;
     } else {
       return 1;
     }

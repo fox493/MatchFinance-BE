@@ -46,6 +46,9 @@ export class AccountPoints {
   @Column({ type: 'double' })
   time_factor: number;
 
+  @Column({ type: 'double' })
+  rank_factor: number;
+
   @Column({ type: 'int' })
   referral_points: number;
 }
