@@ -21,8 +21,8 @@ export class UserDataService {
     let res = [];
     userData.forEach((data) => {
       let resData = {
-        tvl: 0,
         ...data,
+        tvl: 0,
       };
       const account = accountPoints.find(
         (account) => account.address === data.public_address,
@@ -32,7 +32,7 @@ export class UserDataService {
       }
       res.push(resData);
     });
-    return res;
+    return res.sort((a, b) => b.traffic_source - a.traffic_source);
   }
 
   async recordUserData(data: RecordUserDataDto) {
