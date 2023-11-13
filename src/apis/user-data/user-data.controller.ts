@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
   ValidationPipe,
@@ -11,6 +12,12 @@ import { RecordUserDataDto } from './dto/record.dto';
 @Controller('user-data')
 export class UserDataController {
   constructor(private readonly userDataService: UserDataService) {}
+
+  @Get('/list')
+  @HttpCode(200)
+  async getUserDataList() {
+    return this.userDataService.getUserDataList();
+  }
 
   @Post('/record')
   @HttpCode(200)
