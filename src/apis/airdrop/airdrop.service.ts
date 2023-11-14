@@ -30,7 +30,7 @@ export class AirdropService {
     return res;
   }
 
-  @Cron(CronExpression.EVERY_8_HOURS)
+  @Cron(CronExpression.EVERY_2_HOURS)
   async syncAccountPoints() {
     Logger.log('[Cron-async-points] Start sync account points');
     const airdrop_start_time =
@@ -100,23 +100,24 @@ export class AirdropService {
         const account = accounts.find((account) => account.address === address);
         const now = new Date().getTime() / 1000;
         const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+        const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
         if (account) {
           account.lp_withdrew = account.lp_withdrew
             ? account.lp_withdrew + withdrew
             : withdrew;
           if (account.withdrew_after_airdrp_start) {
-            account.points = account.points
-              ? account.points - withdrew
-              : -withdrew;
+            const points = withdrew * timePassedFactor;
+            account.points = account.points ? account.points - points : -points;
           } else {
-            const points = withdrew * timeFactor;
+            const points = withdrew * timeFactor * timePassedFactor;
             account.points = account.points ? account.points - points : -points;
           }
         } else {
           const newAccount = new AccountPoints();
           newAccount.address = address;
           newAccount.lp_withdrew = withdrew;
-          newAccount.points = -withdrew * timeFactor;
+          newAccount.points = -withdrew * timeFactor * timePassedFactor;
           accounts.push(newAccount);
         }
       }
@@ -126,30 +127,32 @@ export class AirdropService {
           stEthPrice * Number(ethers.formatEther(data['amount']));
         const now = new Date().getTime() / 1000;
         const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+        const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
         const account = accounts.find((account) => account.address === address);
         if (account) {
           account.steth_withdrew = account.steth_withdrew
             ? account.steth_withdrew + withdrew
             : withdrew;
           if (account.withdrew_after_airdrp_start) {
-            account.points = account.points
-              ? account.points - withdrew
-              : -withdrew;
+            const points = withdrew * timePassedFactor;
+            account.points = account.points ? account.points - points : -points;
           } else {
-            const points = withdrew * timeFactor;
+            const points = withdrew * timeFactor * timePassedFactor;
             account.points = account.points ? account.points - points : -points;
           }
         } else {
           const newAccount = new AccountPoints();
           newAccount.address = address;
           newAccount.steth_withdrew = withdrew;
-          newAccount.points = -withdrew * timeFactor;
+          newAccount.points = -withdrew * timeFactor * timePassedFactor;
           accounts.push(newAccount);
         }
       }
       // 3. 遍历supplied表，记录用户supplied金额，用户总分加supplied金额 * 时间因子（如果有withdrew标签，时间因子为1）
       for (let data of stETHSuppliedData) {
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
         const address = data['account'];
         const supplied =
           stEthPrice * Number(ethers.formatEther(data['amount']));
@@ -162,21 +165,20 @@ export class AirdropService {
             : supplied;
 
           if (account.withdrew_after_airdrp_start) {
-            account.points = account.points
-              ? account.points + supplied
-              : supplied;
+            const points = supplied * timePassedFactor;
+            account.points = account.points ? account.points + points : points;
           } else {
             // 判断存款发生在空投开始前后
             if (timestamp > airdrop_start_time) {
               const timeFactor = this.getTimeFactor(now - timestamp);
-              const points = supplied * timeFactor;
+              const points = supplied * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
               account.time_factor = timeFactor;
             } else {
               const timeFactor = this.getTimeFactor(now - airdrop_start_time);
-              const points = supplied * timeFactor;
+              const points = supplied * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
@@ -190,12 +192,12 @@ export class AirdropService {
           // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
           if (timestamp > airdrop_start_time) {
             const timeFactor = this.getTimeFactor(now - timestamp);
-            const points = supplied * timeFactor;
+            const points = supplied * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           } else {
             const timeFactor = this.getTimeFactor(now - airdrop_start_time);
-            const points = supplied * timeFactor;
+            const points = supplied * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           }
@@ -205,6 +207,7 @@ export class AirdropService {
       // 4. 遍历staked表，记录用户staked金额，用户总分加staked金额 * 时间因子（如果有withdrew标签，时间因子为1）
       for (let data of lpStakedData) {
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
         const address = data['account'];
         const staked = lpPrice * Number(ethers.formatEther(data['amount']));
         const account = accounts.find((account) => account.address === address);
@@ -216,19 +219,20 @@ export class AirdropService {
             : staked;
 
           if (account.withdrew_after_airdrp_start) {
-            account.points = account.points ? account.points + staked : staked;
+            const points = staked * timePassedFactor;
+            account.points = account.points ? account.points + points : points;
           } else {
             // 判断存款发生在空投开始前后
             if (timestamp > airdrop_start_time) {
               const timeFactor = this.getTimeFactor(now - timestamp);
-              const points = staked * timeFactor;
+              const points = staked * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
               account.time_factor = timeFactor;
             } else {
               const timeFactor = this.getTimeFactor(now - airdrop_start_time);
-              const points = staked * timeFactor;
+              const points = staked * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
@@ -242,12 +246,12 @@ export class AirdropService {
           // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
           if (timestamp > airdrop_start_time) {
             const timeFactor = this.getTimeFactor(now - timestamp);
-            const points = staked * timeFactor;
+            const points = staked * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           } else {
             const timeFactor = this.getTimeFactor(now - airdrop_start_time);
-            const points = staked * timeFactor;
+            const points = staked * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           }
@@ -326,6 +330,19 @@ export class AirdropService {
     return res.data.result.rows;
   }
 
+  async getRecordsAfterAirdropStart(data: any) {
+    let res = [];
+    const airdrop_start_time =
+      new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+    for (let item of data) {
+      const timestamp = new Date(item['evt_block_time']).getTime() / 1000;
+      if (timestamp > airdrop_start_time) {
+        res.push(item);
+      }
+    }
+    return res;
+  }
+
   // 获取时间因子，传入秒数
   getTimeFactor(time: number) {
     const day = 24 * 60 * 60;
@@ -359,6 +376,21 @@ export class AirdropService {
       return 1.1;
     } else {
       return 1;
+    }
+  }
+
+  getTimePassedFactor(timestamp: number) {
+    const airdrop_start_time =
+      new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+    const now = new Date().getTime() / 1000;
+    if (timestamp > airdrop_start_time) {
+      const timepassed = now - timestamp;
+      const daypassed = timepassed / (24 * 60 * 60);
+      return daypassed;
+    } else {
+      const timepassed = now - airdrop_start_time;
+      const daypassed = timepassed / (24 * 60 * 60);
+      return daypassed;
     }
   }
 }

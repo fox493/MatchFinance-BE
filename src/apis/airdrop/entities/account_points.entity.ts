@@ -40,15 +40,15 @@ export class AccountPoints {
   @Column({ type: 'int', default: 0 })
   points: number;
 
-  @Column({ type: 'double' })
+  @Column({ type: 'double', default: 1 })
   tvl_factor: number;
 
-  @Column({ type: 'double' })
+  @Column({ type: 'double', default: 1 })
   time_factor: number;
 
-  @Column({ type: 'double' })
+  @Column({ type: 'double', default: 1 })
   rank_factor: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0 })
   referral_points: number;
 }
