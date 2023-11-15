@@ -261,11 +261,10 @@ export class AirdropService {
       // 5. 遍历用户数组，计算每个用户总仓位，为每个用户总分乘以仓位因子
       for (let account of accounts) {
         account.tvl =
-          account.steth_supplied ||
-          0 + account.lp_staked ||
-          0 - account.steth_withdrew ||
-          0 - account.lp_withdrew ||
-          0;
+          (account.steth_supplied || 0) +
+          (account.lp_staked || 0) -
+          (account.lp_withdrew || 0) -
+          (account.steth_withdrew || 0);
         const tvlFactor = this.getTVLFactor(account.tvl);
         account.points = account.points * tvlFactor * 0.1;
         account.tvl_factor = tvlFactor;
