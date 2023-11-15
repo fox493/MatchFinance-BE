@@ -14,6 +14,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TransformInterceptor } from './interceptors';
 import { HttpExceptionFilter } from './filters/http-execption.filter';
 import { UserDataModule } from './apis/user-data/user-data.module';
+import { UsersModule } from './apis/users/users.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { UserDataModule } from './apis/user-data/user-data.module';
     CryptoModule,
     AuthModule,
     UserDataModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [
