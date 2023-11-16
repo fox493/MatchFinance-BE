@@ -15,6 +15,7 @@ import { TransformInterceptor } from './interceptors';
 import { HttpExceptionFilter } from './filters/http-execption.filter';
 import { UserDataModule } from './apis/user-data/user-data.module';
 import { UsersModule } from './apis/users/users.module';
+import { LiquidationModule } from './liquidation/liquidation.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { UsersModule } from './apis/users/users.module';
     AuthModule,
     UserDataModule,
     UsersModule,
+    LiquidationModule,
   ],
   controllers: [],
   providers: [
