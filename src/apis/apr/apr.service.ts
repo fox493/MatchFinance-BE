@@ -8,7 +8,7 @@ export class AprService {
     apy: string;
     total_liquidity: string;
     fees: string;
-    weth_info: string;
+    weth_apr: string;
   };
 
   constructor() {
@@ -45,7 +45,7 @@ export class AprService {
       el.click();
     });
     await new Promise((resolve) => setTimeout(resolve, 15000));
-    const weth_info = await page.evaluate(() => {
+    const weth_apr = await page.evaluate(() => {
       // const fatherElement = document.querySelector('.vaults_tipmainp__gJ3zU');
       const fatherElement = document.querySelector('.vaults_tipmainp__gJ3zU');
       return fatherElement.children[3].children[0].innerHTML || '0.00%';
@@ -75,7 +75,7 @@ export class AprService {
       apy: apy.split('~')[1],
       total_liquidity,
       fees,
-      weth_info,
+      weth_apr,
     };
 
     // 关闭浏览器
