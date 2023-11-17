@@ -8,12 +8,12 @@ export class AprService {
     apy: string;
     total_liquidity: string;
     fees: string;
+    weth_info: string;
   };
 
   constructor() {
     this.fetchApyData();
   }
-
   async getApyData() {
     return this.apyData;
   }
@@ -37,6 +37,21 @@ export class AprService {
       return element ? element.innerText : null;
     });
 
+    // 2. lybra dashboard
+    await page.goto('https://lybra.finance/dashboard');
+    await page.waitForSelector('.dashboard_titleItem__NyrD1');
+    page.$eval('.dashboard_titleItem__NyrD1', (el) => {
+      // @ts-ignore
+      el.click();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    const weth_info = await page.evaluate(() => {
+      // const fatherElement = document.querySelector('.vaults_tipmainp__gJ3zU');
+      const fatherElement = document.querySelector('.vaults_tipmainp__gJ3zU');
+      return fatherElement.children[3].children[0].innerHTML || '0.00%';
+    });
+
+    // 3. uniswap
     await page.goto(
       'https://v2.info.uniswap.org/pair/0x3a0ef60e803aae8e94f741e7f61c7cbe9501e569',
     );
@@ -60,10 +75,12 @@ export class AprService {
       apy: apy.split('~')[1],
       total_liquidity,
       fees,
+      weth_info,
     };
 
     // 关闭浏览器
     await browser.close();
     Logger.log('[Cron-async-apy] End sync apy data');
   }
+
 }
