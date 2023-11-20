@@ -355,11 +355,13 @@ export class AirdropService {
   }
 
   getTVLFactor(tvl: number) {
-    if (tvl >= 10000 && tvl < 50000) {
+    if (tvl >= 5000 && tvl < 10000) {
       return 1.1;
-    } else if (tvl >= 50000 && tvl < 200000) {
+    } else if (tvl >= 10000 && tvl < 50000) {
       return 1.2;
-    } else if (tvl >= 200000) {
+    } else if (tvl >= 50000 && tvl < 100000) {
+      return 1.3;
+    } else if (tvl >= 100000) {
       return 1.4;
     } else {
       return 1;
