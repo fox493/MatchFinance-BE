@@ -1,5 +1,6 @@
-import { Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
 import { CollectionService } from './collection.service';
+import { Response } from 'express';
 
 @Controller('collection')
 export class CollectionController {
@@ -7,8 +8,12 @@ export class CollectionController {
 
   @Post('twitter-redirect-amount')
   @HttpCode(200)
-  async recordTwitterRedirectAmount() {
-    return await this.collectionService.recordTwitterRedirectAmount();
+  async recordTwitterRedirectAmount(@Res() res: Response) {
+    await this.collectionService.recordTwitterRedirectAmount();
+
+    res.redirect('https://twitter.com/MatchFinance');
+
+    return res;
   }
 
   @Get('twitter-redirect-amount')
