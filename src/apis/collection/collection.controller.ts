@@ -6,7 +6,7 @@ import { Response } from 'express';
 export class CollectionController {
   constructor(private readonly collectionService: CollectionService) {}
 
-  @Post('twitter-redirect-amount')
+  @Get('/record/twitter-redirect-amount')
   @HttpCode(200)
   async recordTwitterRedirectAmount(@Res() res: Response) {
     await this.collectionService.recordTwitterRedirectAmount();
