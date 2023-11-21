@@ -16,6 +16,7 @@ import { HttpExceptionFilter } from './filters/http-execption.filter';
 import { UserDataModule } from './apis/user-data/user-data.module';
 import { UsersModule } from './apis/users/users.module';
 import { LiquidationModule } from './liquidation/liquidation.module';
+import { CollectionModule } from './apis/collection/collection.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { LiquidationModule } from './liquidation/liquidation.module';
     UserDataModule,
     UsersModule,
     LiquidationModule,
+    CollectionModule,
   ],
   controllers: [],
   providers: [
