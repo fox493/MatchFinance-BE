@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import puppeteer from 'puppeteer';
+import { RedisClientType } from 'redis';
 
 @Injectable()
 export class AprService {
@@ -10,7 +11,8 @@ export class AprService {
     fees: string;
     weth_apr: string;
   };
-
+  @Inject('REDIS_CLIENT')
+  private redisClient: RedisClientType;
   constructor() {
     this.fetchApyData();
   }
@@ -78,9 +80,14 @@ export class AprService {
       weth_apr,
     };
 
+    // 写入redis
+    await this.redisClient.set(
+      'dlp_total_liquidity',
+      Number(total_liquidity.replace(/\$|,/g, '')) || 0,
+    );
+
     // 关闭浏览器
     await browser.close();
     Logger.log('[Cron-async-apy] End sync apy data');
   }
-
 }

@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ReferralEntity } from '../referral/entitites/referral.entity';
+import { RedisClientType } from 'redis';
 
 @Injectable()
 export class AirdropService {
@@ -16,6 +17,8 @@ export class AirdropService {
     private readonly accountPointsRepository: Repository<AccountPoints>,
     @InjectRepository(ReferralEntity)
     private readonly referralRepository: Repository<ReferralEntity>,
+    @Inject('REDIS_CLIENT')
+    private redisClient: RedisClientType,
   ) {
     this.syncAccountPoints();
   }
@@ -43,13 +46,25 @@ export class AirdropService {
           ).staticCall(),
         ),
       );
-      const lpPrice = Number(
+      const lpTotalSupply = Number(
         ethers.formatEther(
-          await this.contractService.MatchFinancePoolContract.getLpValue(
-            ethers.parseEther('1'),
-          ),
+          await this.contractService.LiquidityPoolContract.totalSupply(),
         ),
       );
+      const lpTotalLiquidity = await this.redisClient.get(
+        'dlp_total_liquidity',
+      );
+
+      let lpPrice = Number(lpTotalLiquidity) / lpTotalSupply;
+      if (!lpPrice) {
+        lpPrice = Number(
+          ethers.formatEther(
+            await this.contractService.MatchFinancePoolContract.getLpValue(
+              ethers.parseEther('1'),
+            ),
+          ),
+        );
+      }
       const stETHSuppliedData = await this.getStEthTotalSuppliedTableFromDune();
       const stETHWithdrewData = await this.getStEthWithdrewTableFromDune();
       const lpStakedData = await this.getLpStakedTableFromDune();
