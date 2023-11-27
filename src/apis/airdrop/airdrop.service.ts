@@ -30,7 +30,7 @@ export class AirdropService {
     return res;
   }
 
-  @Cron(CronExpression.EVERY_2_HOURS)
+  @Cron(CronExpression.EVERY_12_HOURS)
   async syncAccountPoints() {
     Logger.log('[Cron-async-points] Start sync account points');
     const airdrop_start_time =
