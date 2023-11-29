@@ -288,14 +288,21 @@ export class AirdropService {
       const referralList = await this.referralRepository.find();
       referralList.forEach((referral) => {
         const referrer = accounts.find(
-          (account) => account.address === referral.referer_address,
+          (account) =>
+            account.address === referral.referer_address.toLowerCase(),
         );
         const referred = accounts.find(
-          (account) => account.address === referral.referred_address,
+          (account) =>
+            account.address === referral.referred_address.toLowerCase(),
         );
+        console.log(referrer, referred);
         if (!referrer || !referred) return;
-        referrer.points += referred.points * 0.1;
-        referrer.referral_points += referred.points * 0.1;
+        referrer.points = referrer.points
+          ? referrer.points + referred.points * 0.1
+          : referred.points * 0.1;
+        referrer.referral_points = referrer.referral_points
+          ? referrer.referral_points + referred.points * 0.1
+          : referred.points * 0.1;
       });
       // 7. 计算用户rank得分
       accounts.sort((a, b) => b.points - a.points);
