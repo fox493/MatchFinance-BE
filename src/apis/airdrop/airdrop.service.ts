@@ -33,7 +33,7 @@ export class AirdropService {
     return res;
   }
 
-  @Cron(CronExpression.EVERY_12_HOURS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async syncAccountPoints() {
     Logger.log('[Cron-async-points] Start sync account points');
     const airdrop_start_time =
@@ -116,7 +116,7 @@ export class AirdropService {
         const now = new Date().getTime() / 1000;
         const timeFactor = this.getTimeFactor(now - airdrop_start_time);
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
-        const timePassedFactor = this.getTimePassedFactor(timestamp);
+        const timePassedFactor = this.getDLPBounsFactor(timestamp);
         if (account) {
           account.lp_withdrew = account.lp_withdrew
             ? account.lp_withdrew + withdrew
@@ -222,7 +222,7 @@ export class AirdropService {
       // 4. 遍历staked表，记录用户staked金额，用户总分加staked金额 * 时间因子（如果有withdrew标签，时间因子为1）
       for (let data of lpStakedData) {
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
-        const timePassedFactor = this.getTimePassedFactor(timestamp);
+        const timePassedFactor = this.getDLPBounsFactor(timestamp);
         const address = data['account'];
         const staked = lpPrice * Number(ethers.formatEther(data['amount']));
         const account = accounts.find((account) => account.address === address);
@@ -240,6 +240,8 @@ export class AirdropService {
             // 判断存款发生在空投开始前后
             if (timestamp > airdrop_start_time) {
               const timeFactor = this.getTimeFactor(now - timestamp);
+              // dlp计分规则：空投开始后到DLP bonus开始前，每天获得仓位等额分数，
+              // DLP bonus开始后，每天获得仓位3倍分数
               const points = staked * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
@@ -295,7 +297,6 @@ export class AirdropService {
           (account) =>
             account.address === referral.referred_address.toLowerCase(),
         );
-        console.log(referrer, referred);
         if (!referrer || !referred) return;
         referrer.points = referrer.points
           ? referrer.points + referred.points * 0.1
@@ -414,6 +415,32 @@ export class AirdropService {
       const timepassed = now - airdrop_start_time;
       const daypassed = timepassed / (24 * 60 * 60);
       return daypassed;
+    }
+  }
+
+  getDLPBounsFactor(timestamp: number) {
+    const airdrop_start_time =
+      new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+    const dlp_start_time =
+      new Date(process.env.DLP_BONUS_START_TIME).getTime() / 1000;
+    const now = new Date().getTime() / 1000;
+
+    if (timestamp > airdrop_start_time && timestamp < dlp_start_time) {
+      const timepassed = dlp_start_time - timestamp;
+      const daypassed = timepassed / (24 * 60 * 60);
+      const bonustimepassed = now - dlp_start_time;
+      const bonusdaypassed = bonustimepassed / (24 * 60 * 60);
+      return daypassed + bonusdaypassed * 3;
+    } else if (timestamp > dlp_start_time) {
+      const timepassed = now - timestamp;
+      const daypassed = timepassed / (24 * 60 * 60);
+      return daypassed * 3;
+    } else if (timestamp < airdrop_start_time) {
+      const timepassed = dlp_start_time - airdrop_start_time;
+      const daypassed = timepassed / (24 * 60 * 60);
+      const bonustimepassed = now - dlp_start_time;
+      const bonusdaypassed = bonustimepassed / (24 * 60 * 60);
+      return daypassed + bonusdaypassed * 3;
     }
   }
 }
