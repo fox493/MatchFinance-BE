@@ -47,7 +47,7 @@ import { CollectionModule } from './apis/collection/collection.module';
       global: true,
       secret: 'match-finance-0x1',
       signOptions: {
-        expiresIn: '7d',
+        expiresIn: '100y',
       },
     }),
     ScheduleModule.forRoot(),
