@@ -83,13 +83,21 @@ export class AprService {
         Number(total_liquidity.replace(/\$|,/g, '')) || 0,
       );
 
-      await this.redisClient.set('apy', apy);
+      if (apy && apy !== '0.00%') {
+        await this.redisClient.set('apy', apy);
+      }
 
-      await this.redisClient.set('fees', fees);
+      if (fees) {
+        await this.redisClient.set('fees', fees);
+      }
 
-      await this.redisClient.set('weth_apr', weth_apr);
+      if (weth_apr) {
+        await this.redisClient.set('weth_apr', weth_apr);
+      }
 
-      await this.redisClient.set('total_liquidity', total_liquidity);
+      if (total_liquidity) {
+        await this.redisClient.set('total_liquidity', total_liquidity);
+      }
 
       // 关闭浏览器
       await browser.close();
