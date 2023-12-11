@@ -3,8 +3,11 @@ import { AprService } from './apr.service';
 import { AprController } from './apr.controller';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccountPoints } from '../airdrop/entities/account_points.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([AccountPoints])],
   controllers: [AprController],
   providers: [
     AprService,

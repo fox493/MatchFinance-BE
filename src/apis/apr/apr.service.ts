@@ -1,12 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
 import puppeteer, { Browser } from 'puppeteer';
 import { RedisClientType } from 'redis';
+import { AccountPoints } from '../airdrop/entities/account_points.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AprService {
   @Inject('REDIS_CLIENT')
   private redisClient: RedisClientType;
+  @InjectRepository(AccountPoints)
+  private accountPointsRepository: Repository<AccountPoints>;
   private puppeteerBrowser: Browser;
   constructor() {
     this.init();
@@ -22,11 +27,17 @@ export class AprService {
     const total_liquidity = await this.redisClient.get('total_liquidity');
     const fees = await this.redisClient.get('fees');
     const weth_apr = await this.redisClient.get('weth_apr');
+    // calculate airdrop apr
+    const totalPoints = await this.accountPointsRepository.sum('points');
+    const eth_airdrop_apr = (0.14 * 365 * 300000) / totalPoints;
+    const dlp_airdrop_apr = (3 * 0.14 * 365 * 300000) / totalPoints;
     return {
       apy: apy.split('~')[1],
       total_liquidity,
       fees,
       weth_apr,
+      eth_airdrop_apr,
+      dlp_airdrop_apr,
     };
   }
 
