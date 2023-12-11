@@ -30,11 +30,11 @@ export class AprService {
     // calculate airdrop apr
     const totalPoints = await this.accountPointsRepository.sum('points');
     const eth_airdrop_apr = `${(
-      (0.14 * 365 * 300000 * 100) /
+      (0.14 * 365 * 600000 * 100) /
       totalPoints
     )?.toFixed(2)}%`;
     const dlp_airdrop_apr = `${(
-      (3 * 0.14 * 365 * 300000 * 100) /
+      (3 * 0.14 * 365 * 600000 * 100) /
       totalPoints
     )?.toFixed(2)}%`;
     return {
