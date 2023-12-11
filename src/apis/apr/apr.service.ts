@@ -1,15 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import { RedisClientType } from 'redis';
 
 @Injectable()
 export class AprService {
   @Inject('REDIS_CLIENT')
   private redisClient: RedisClientType;
+  private puppeteerBrowser: Browser;
   constructor() {
+    this.init();
+  }
+
+  async init() {
+    this.puppeteerBrowser = await puppeteer.launch({ headless: 'new' });
     this.fetchApyData();
   }
+
   async getApyData() {
     const apy = await this.redisClient.get('apy');
     const total_liquidity = await this.redisClient.get('total_liquidity');
@@ -26,9 +33,7 @@ export class AprService {
   @Cron(CronExpression.EVERY_30_MINUTES)
   async fetchApyData() {
     try {
-      const browser = await puppeteer.launch({ headless: 'new' });
-
-      const page = await browser.newPage();
+      const page = await this.puppeteerBrowser.newPage();
 
       await page.goto('https://lybra.finance/');
 
@@ -98,12 +103,12 @@ export class AprService {
       if (total_liquidity) {
         await this.redisClient.set('total_liquidity', total_liquidity);
       }
-
-      // 关闭浏览器
-      await browser.close();
-      Logger.log('[Cron-async-apy] End sync apy data');
     } catch (error) {
       Logger.error(error);
+    } finally {
+      // 关闭浏览器
+      await this.puppeteerBrowser.close();
+      Logger.log('[Cron-async-apy] End sync apy data');
     }
   }
 }
