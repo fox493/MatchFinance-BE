@@ -32,7 +32,7 @@ export class AprService {
     const eth_airdrop_apr = `${(
       (0.14 * 365 * 300000 * 100) /
       totalPoints
-    )?.toFixed(2)} %`;
+    )?.toFixed(2)}%`;
     const dlp_airdrop_apr = `${(
       (3 * 0.14 * 365 * 300000 * 100) /
       totalPoints
