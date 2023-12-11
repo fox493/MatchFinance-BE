@@ -29,8 +29,14 @@ export class AprService {
     const weth_apr = await this.redisClient.get('weth_apr');
     // calculate airdrop apr
     const totalPoints = await this.accountPointsRepository.sum('points');
-    const eth_airdrop_apr = (0.14 * 365 * 300000) / totalPoints;
-    const dlp_airdrop_apr = (3 * 0.14 * 365 * 300000) / totalPoints;
+    const eth_airdrop_apr = `${(
+      (0.14 * 365 * 300000 * 100) /
+      totalPoints
+    )?.toFixed(2)} %`;
+    const dlp_airdrop_apr = `${(
+      (3 * 0.14 * 365 * 300000 * 100) /
+      totalPoints
+    )?.toFixed(2)}%`;
     return {
       apy: apy.split('~')[1],
       total_liquidity,
