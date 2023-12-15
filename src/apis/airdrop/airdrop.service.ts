@@ -322,7 +322,7 @@ export class AirdropService {
 
   async getStEthTotalSuppliedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3142243/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286141/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -330,7 +330,7 @@ export class AirdropService {
 
   async getLpStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3142572/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286144/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -338,7 +338,7 @@ export class AirdropService {
 
   async getStEthWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3146847/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286143/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -346,7 +346,7 @@ export class AirdropService {
 
   async getLpWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3146842/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286136/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
