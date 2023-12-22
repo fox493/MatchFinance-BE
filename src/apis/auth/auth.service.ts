@@ -24,7 +24,7 @@ export class AuthService {
     const timeStamp = Date.now().toString();
     const message = this.generateChallengeMessage(timeStamp);
     const welcomeMessage = 'Sign in to Match Finance\n\nChallege:\n' + message;
-    await this.redisClient.setEx(`challenge:${publicAddress}`, 300, message);
+    await this.redisClient.setEx(`challenge:${publicAddress}`, 300, welcomeMessage);
     return welcomeMessage;
   }
 
