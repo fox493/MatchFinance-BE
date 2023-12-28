@@ -97,7 +97,7 @@ export class AprService {
 
       const total_liquidity = uniswap_info[0];
 
-      const fees = uniswap_info[2];
+      const fees = uniswap_info[2] === '-' ? '0' : uniswap_info[2];
 
       // 写入redis
       await this.redisClient.set(
@@ -121,7 +121,7 @@ export class AprService {
         await this.redisClient.set('total_liquidity', total_liquidity);
       }
     } catch (error) {
-      Logger.error(error);
+      Logger.error(error, '[Cron-async-apy]');
     } finally {
       // 关闭浏览器
       await this.puppeteerBrowser.close();
