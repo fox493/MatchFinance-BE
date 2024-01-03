@@ -20,7 +20,7 @@ export class AirdropService {
     @Inject('REDIS_CLIENT')
     private redisClient: RedisClientType,
   ) {
-    this.syncAccountPoints();
+    // this.syncAccountPoints();
   }
 
   async getAccountPoints() {
@@ -33,7 +33,7 @@ export class AirdropService {
     return res;
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  // @Cron(CronExpression.EVERY_30_MINUTES)
   async syncAccountPoints() {
     Logger.log('[Cron-async-points] Start sync account points');
     const airdrop_start_time =
