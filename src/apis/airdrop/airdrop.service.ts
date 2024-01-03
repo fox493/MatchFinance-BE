@@ -38,6 +38,8 @@ export class AirdropService {
     Logger.log('[Cron-async-points] Start sync account points');
     const airdrop_start_time =
       new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+    const airdrop_end_time =
+      new Date(process.env.AIRDROP_END_TIME).getTime() / 1000;
     try {
       const stEthPrice = Number(
         ethers.formatEther(
@@ -114,7 +116,8 @@ export class AirdropService {
         const withdrew = lpPrice * Number(ethers.formatEther(data['amount']));
         const account = accounts.find((account) => account.address === address);
         const now = new Date().getTime() / 1000;
-        const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
+        const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
         const timePassedFactor = this.getDLPBounsFactor(timestamp);
         if (account) {
@@ -141,7 +144,8 @@ export class AirdropService {
         const withdrew =
           stEthPrice * Number(ethers.formatEther(data['amount']));
         const now = new Date().getTime() / 1000;
-        const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
+        const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
         const timePassedFactor = this.getTimePassedFactor(timestamp);
         const account = accounts.find((account) => account.address === address);
@@ -173,6 +177,7 @@ export class AirdropService {
           stEthPrice * Number(ethers.formatEther(data['amount']));
         const account = accounts.find((account) => account.address === address);
         const now = new Date().getTime() / 1000;
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
 
         if (account) {
           account.steth_supplied = account.steth_supplied
@@ -185,14 +190,16 @@ export class AirdropService {
           } else {
             // 判断存款发生在空投开始前后
             if (timestamp > airdrop_start_time) {
-              const timeFactor = this.getTimeFactor(now - timestamp);
+              const timeFactor = this.getTimeFactor(endTime - timestamp);
               const points = supplied * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
                 : points;
               account.time_factor = timeFactor;
             } else {
-              const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+              const timeFactor = this.getTimeFactor(
+                endTime - airdrop_start_time,
+              );
               const points = supplied * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
@@ -206,12 +213,12 @@ export class AirdropService {
           newAccount.steth_supplied = supplied;
           // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
           if (timestamp > airdrop_start_time) {
-            const timeFactor = this.getTimeFactor(now - timestamp);
+            const timeFactor = this.getTimeFactor(endTime - timestamp);
             const points = supplied * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           } else {
-            const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+            const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
             const points = supplied * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
@@ -227,7 +234,7 @@ export class AirdropService {
         const staked = lpPrice * Number(ethers.formatEther(data['amount']));
         const account = accounts.find((account) => account.address === address);
         const now = new Date().getTime() / 1000;
-
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
         if (account) {
           account.lp_staked = account.lp_staked
             ? account.lp_staked + staked
@@ -239,7 +246,7 @@ export class AirdropService {
           } else {
             // 判断存款发生在空投开始前后
             if (timestamp > airdrop_start_time) {
-              const timeFactor = this.getTimeFactor(now - timestamp);
+              const timeFactor = this.getTimeFactor(endTime - timestamp);
               // dlp计分规则：空投开始后到DLP bonus开始前，每天获得仓位等额分数，
               // DLP bonus开始后，每天获得仓位3倍分数
               const points = staked * timeFactor * timePassedFactor;
@@ -248,7 +255,9 @@ export class AirdropService {
                 : points;
               account.time_factor = timeFactor;
             } else {
-              const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+              const timeFactor = this.getTimeFactor(
+                endTime - airdrop_start_time,
+              );
               const points = staked * timeFactor * timePassedFactor;
               account.points = account.points
                 ? account.points + points
@@ -262,12 +271,12 @@ export class AirdropService {
           newAccount.lp_staked = staked;
           // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
           if (timestamp > airdrop_start_time) {
-            const timeFactor = this.getTimeFactor(now - timestamp);
+            const timeFactor = this.getTimeFactor(endTime - timestamp);
             const points = staked * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           } else {
-            const timeFactor = this.getTimeFactor(now - airdrop_start_time);
+            const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
             const points = staked * timeFactor * timePassedFactor;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
@@ -311,10 +320,12 @@ export class AirdropService {
         account.rank_factor = this.getRankFactor(index);
         account.points = account.points * account.rank_factor;
       });
-      // 8. 保存用户数据
+      // 8. 先清空再保存用户数据
+      await this.accountPointsRepository.clear();
       await this.accountPointsRepository.save(accounts);
     } catch (error) {
       Logger.error('sync account points failed', error);
+      console.log(error)
     } finally {
       Logger.log('[Cron-async-points] End sync account points');
     }
@@ -322,7 +333,7 @@ export class AirdropService {
 
   async getStEthTotalSuppliedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286141/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3142243/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -330,7 +341,7 @@ export class AirdropService {
 
   async getLpStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286144/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3142572/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -338,7 +349,7 @@ export class AirdropService {
 
   async getStEthWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286143/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3146847/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -346,7 +357,7 @@ export class AirdropService {
 
   async getLpWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286136/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3146842/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -406,13 +417,16 @@ export class AirdropService {
   getTimePassedFactor(timestamp: number) {
     const airdrop_start_time =
       new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+    const airdrop_end_time =
+      new Date(process.env.AIRDROP_END_TIME).getTime() / 1000;
     const now = new Date().getTime() / 1000;
+    const end_time = airdrop_end_time > now ? now : airdrop_end_time;
     if (timestamp > airdrop_start_time) {
-      const timepassed = now - timestamp;
+      const timepassed = end_time - timestamp;
       const daypassed = timepassed / (24 * 60 * 60);
       return daypassed;
     } else {
-      const timepassed = now - airdrop_start_time;
+      const timepassed = end_time - airdrop_start_time;
       const daypassed = timepassed / (24 * 60 * 60);
       return daypassed;
     }
@@ -424,21 +438,24 @@ export class AirdropService {
     const dlp_start_time =
       new Date(process.env.DLP_BONUS_START_TIME).getTime() / 1000;
     const now = new Date().getTime() / 1000;
+    const airdrop_end_time =
+      new Date(process.env.AIRDROP_END_TIME).getTime() / 1000;
+    const end_time = airdrop_end_time > now ? now : airdrop_end_time;
 
     if (timestamp > airdrop_start_time && timestamp < dlp_start_time) {
       const timepassed = dlp_start_time - timestamp;
       const daypassed = timepassed / (24 * 60 * 60);
-      const bonustimepassed = now - dlp_start_time;
+      const bonustimepassed = end_time - dlp_start_time;
       const bonusdaypassed = bonustimepassed / (24 * 60 * 60);
       return daypassed + bonusdaypassed * 3;
     } else if (timestamp > dlp_start_time) {
-      const timepassed = now - timestamp;
+      const timepassed = end_time - timestamp;
       const daypassed = timepassed / (24 * 60 * 60);
       return daypassed * 3;
     } else if (timestamp < airdrop_start_time) {
       const timepassed = dlp_start_time - airdrop_start_time;
       const daypassed = timepassed / (24 * 60 * 60);
-      const bonustimepassed = now - dlp_start_time;
+      const bonustimepassed = end_time - dlp_start_time;
       const bonusdaypassed = bonustimepassed / (24 * 60 * 60);
       return daypassed + bonusdaypassed * 3;
     }
