@@ -18,12 +18,19 @@ export class ReferralService {
   ) {}
 
   async getReferralCode(publicAddress: string) {
-    const foundCode = await this.referralCodeRepository.findOneBy({
-      address: publicAddress,
+    const codes = await this.referralCodeRepository.find();
+    const referral = await this.referralRepository.findOneBy({
+      referred_address: publicAddress,
     });
+    const foundCode = codes.find((code) => code.address === publicAddress);
+    const referrerCode = referral?.referer_address
+      ? codes.find((code) => code.address === referral?.referer_address)
+      : '';
     if (foundCode) {
       return {
         code: foundCode.code,
+        referrer: referral?.referer_address || '',
+        referrerCode,
       };
     } else {
       return this.generateReferralCode(publicAddress);
