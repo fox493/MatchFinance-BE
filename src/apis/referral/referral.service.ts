@@ -23,14 +23,14 @@ export class ReferralService {
       referred_address: publicAddress,
     });
     const foundCode = codes.find((code) => code.address === publicAddress);
-    const referrerCode = referral?.referer_address
+    const referrer = referral?.referer_address
       ? codes.find((code) => code.address === referral?.referer_address)
-      : '';
+      : null;
     if (foundCode) {
       return {
         code: foundCode.code,
-        referrer: referral?.referer_address || '',
-        referrerCode,
+        referrer: referrer?.address || '',
+        referrerCode: referrer?.code || '',
       };
     } else {
       return this.generateReferralCode(publicAddress);
