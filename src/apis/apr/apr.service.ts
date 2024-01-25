@@ -5,16 +5,23 @@ import puppeteer, { Browser } from 'puppeteer';
 import { RedisClientType } from 'redis';
 import { AccountPoints } from '../airdrop/entities/account_points.entity';
 import { Repository } from 'typeorm';
+import { ethers } from 'ethers';
+import axios from 'axios';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class AprService {
-  @Inject('REDIS_CLIENT')
-  private redisClient: RedisClientType;
-  @InjectRepository(AccountPoints)
-  private accountPointsRepository: Repository<AccountPoints>;
   private puppeteerBrowser: Browser;
-  constructor() {
+
+  constructor(
+    @Inject('REDIS_CLIENT')
+    private redisClient: RedisClientType,
+    @InjectRepository(AccountPoints)
+    private accountPointsRepository: Repository<AccountPoints>,
+    private readonly contractService: ContractService,
+  ) {
     this.init();
+    this.syncPrice();
   }
 
   async init() {
@@ -37,6 +44,9 @@ export class AprService {
       (3 * 0.14 * 365 * 600000 * 100) /
       totalPoints
     )?.toFixed(2)}%`;
+    const dlpApr = await this.redisClient.get('dlpApr');
+    const stethApr = await this.redisClient.get('stethApr');
+    const matchApr = await this.redisClient.get('matchApr');
     return {
       apy: apy.split('~')[1],
       total_liquidity,
@@ -44,6 +54,11 @@ export class AprService {
       weth_apr,
       eth_airdrop_apr,
       dlp_airdrop_apr,
+      airdropApr: {
+        eth: stethApr,
+        dlp: dlpApr,
+        match: matchApr,
+      },
     };
   }
 
@@ -127,5 +142,70 @@ export class AprService {
       await this.puppeteerBrowser.close();
       Logger.log('[Cron-async-apy] End sync apy data');
     }
+  }
+
+  // 每分钟同步一次价格
+  @Cron('0 */1 * * * *')
+  async syncPrice() {
+    // 1. steth
+    const stEthPrice = Number(
+      ethers.formatEther(
+        await this.contractService.StethMintPoolContract.getFunction(
+          'getAssetPrice',
+        ).staticCall(),
+      ),
+    );
+    // 2. dlp
+    const dlpPrice = ethers.formatEther(
+      await this.contractService.MatchFinancePoolContract.getLpValue(
+        ethers.parseEther('1'),
+      ),
+    );
+    // 3. match
+    const { data } = await axios.get(
+      'https://api.coingecko.com/api/v3/simple/price?ids=match-token&vs_currencies=usd',
+      {
+        timeout: 10000,
+      },
+    );
+
+    const matchPrice = Number(data['match-token'].usd);
+
+    // steth tvl
+    const stethTotal = ethers.formatEther(
+      await this.contractService.MatchFinancePoolContract.totalSupplied(
+        '0xa980d4c0C2E48d305b582AA439a3575e3de06f0E',
+      ),
+    );
+    const stethTVL = Number(stethTotal) * stEthPrice;
+
+    // dlp tvl
+    // const dlpTVL = await this.redisClient.get('dlp_total_liquidity');
+    const totalStaked = ethers.formatEther(
+      await this.contractService.MatchFinancePoolContract.totalStaked(),
+    );
+    const dlpTVL = Number(totalStaked) * Number(dlpPrice);
+
+    // match tvl
+    const matchTotal = ethers.formatEther(
+      await this.contractService.VLMatchStakingPoolContract.totalStaked(),
+    );
+    const matchTVL = Number(matchTotal) * Number(data['match-token'].usd);
+
+    console.log('stethTVL', stethTVL, 'dlpTVL', dlpTVL, 'matchTVL', matchTVL);
+
+    const baseApr =
+      (((0.01 * 10000000 * matchPrice) /
+        (0.2 * dlpTVL + 0.1 * stethTVL + 0.1 * matchTVL)) *
+        365) /
+      42;
+
+    const dlpApr = baseApr * 0.2;
+    const stethApr = baseApr * 0.1;
+    const matchApr = baseApr * 0.1;
+
+    await this.redisClient.set('dlpApr', dlpApr.toFixed(2));
+    await this.redisClient.set('stethApr', stethApr.toFixed(2));
+    await this.redisClient.set('matchApr', matchApr.toFixed(2));
   }
 }
