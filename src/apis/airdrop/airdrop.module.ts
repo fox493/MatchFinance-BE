@@ -7,9 +7,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReferralEntity } from '../referral/entitites/referral.entity';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
+import { AccountPointsV2 } from './entities/account_points_v2.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AccountPoints, ReferralEntity])],
+  imports: [
+    TypeOrmModule.forFeature([AccountPoints, AccountPointsV2, ReferralEntity]),
+  ],
   controllers: [AirdropController],
   providers: [
     AirdropService,
