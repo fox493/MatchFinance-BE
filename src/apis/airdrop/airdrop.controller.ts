@@ -9,4 +9,9 @@ export class AirdropController {
   async getLeaderboard() {
     return this.airdropService.getAccountPoints();
   }
+
+  @Get('/leaderboard/v2')
+  async getLeaderboardV2() {
+    return this.airdropService.getAccountPointsV2();
+  }
 }

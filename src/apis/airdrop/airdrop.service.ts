@@ -37,6 +37,16 @@ export class AirdropService {
     return res;
   }
 
+  async getAccountPointsV2() {
+    // 根据points排序
+    const res = await this.accountPointsRepositoryV2.find({
+      order: {
+        points: 'DESC',
+      },
+    });
+    return res;
+  }
+
   @Cron(CronExpression.EVERY_30_MINUTES)
   async syncAccountPointsV2() {
     Logger.log('[Cron-async-points] Start sync account points V2');
