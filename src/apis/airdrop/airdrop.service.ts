@@ -683,7 +683,7 @@ export class AirdropService {
   async getRecordsAfterAirdropStart(data: any) {
     let res = [];
     const airdrop_start_time =
-      new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+      new Date(process.env.AIRDROP_V2_START_TIME).getTime() / 1000;
     for (let item of data) {
       const timestamp = new Date(item['evt_block_time']).getTime() / 1000;
       if (timestamp > airdrop_start_time) {
@@ -707,13 +707,13 @@ export class AirdropService {
 
   getTVLFactor(tvl: number) {
     if (tvl >= 5000 && tvl < 10000) {
-      return 1.1;
-    } else if (tvl >= 10000 && tvl < 50000) {
-      return 1.2;
-    } else if (tvl >= 50000 && tvl < 100000) {
       return 1.3;
+    } else if (tvl >= 10000 && tvl < 50000) {
+      return 1.5;
+    } else if (tvl >= 50000 && tvl < 100000) {
+      return 1.6;
     } else if (tvl >= 100000) {
-      return 1.4;
+      return 1.7;
     } else {
       return 1;
     }
@@ -733,9 +733,9 @@ export class AirdropService {
 
   getTimePassedFactor(timestamp: number) {
     const airdrop_start_time =
-      new Date(process.env.AIRDROP_START_TIME).getTime() / 1000;
+      new Date(process.env.AIRDROP_V2_START_TIME).getTime() / 1000;
     const airdrop_end_time =
-      new Date(process.env.AIRDROP_END_TIME).getTime() / 1000;
+      new Date(process.env.AIRDROP_V2_END_TIME).getTime() / 1000;
     const now = new Date().getTime() / 1000;
     const end_time = airdrop_end_time > now ? now : airdrop_end_time;
     if (timestamp > airdrop_start_time) {
@@ -805,8 +805,8 @@ export class AirdropService {
           (account) => account.address === referral.referred_address,
         );
         if (account) {
-          currentAccount.referral_points = account.referral_points
-            ? account.referral_points + account.base_points * 0.1
+          currentAccount.referral_points = currentAccount.referral_points
+            ? currentAccount.referral_points + account.base_points * 0.1
             : account.base_points * 0.1;
           currentAccount.points += account.base_points * 0.1;
         }
@@ -817,8 +817,8 @@ export class AirdropService {
           (account) => account.address === referral.referred_address,
         );
         if (account) {
-          currentAccount.referral_points = account.referral_points
-            ? account.referral_points + account.base_points * 0.05
+          currentAccount.referral_points = currentAccount.referral_points
+            ? currentAccount.referral_points + account.base_points * 0.05
             : account.base_points * 0.05;
           currentAccount.points += account.base_points * 0.05;
         }
