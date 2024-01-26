@@ -826,4 +826,52 @@ export class AirdropService {
     });
     return accounstList;
   }
+
+  async getReferralBonusInfo(address: string) {
+    const referralList = await this.referralRepository.find();
+
+    const accountsList = await this.accountPointsRepositoryV2.find();
+
+    const directReferrals = referralList.filter(
+      (referral) => referral.referer_address === address,
+    );
+    let indirectReferrals: ReferralEntity[] = [];
+
+    directReferrals.forEach((referral) => {
+      const indirectReferral = referralList.filter(
+        (ref) => ref.referer_address === referral.referred_address,
+      );
+      indirectReferrals = [...indirectReferrals, ...indirectReferral];
+    });
+
+    let res = [];
+
+    directReferrals.forEach((ref) => {
+      const account = accountsList.find(
+        (account) => account.address === ref.referred_address,
+      );
+      if (account) {
+        res.push({
+          address: account.address,
+          tier: 0.1,
+          bonus: account.base_points * 0.1,
+        });
+      }
+    });
+
+    indirectReferrals.forEach((ref) => {
+      const account = accountsList.find(
+        (account) => account.address === ref.referred_address,
+      );
+      if (account) {
+        res.push({
+          address: account.address,
+          tier: 0.05,
+          bonus: account.base_points * 0.05,
+        });
+      }
+    });
+
+    return res;
+  }
 }
