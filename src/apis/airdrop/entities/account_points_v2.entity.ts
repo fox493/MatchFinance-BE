@@ -28,6 +28,16 @@ export class AccountPointsV2 {
   @Column({
     default: 0,
   })
+  match_staked: number;
+
+  @Column({
+    default: 0,
+  })
+  match_unstaked: number;
+
+  @Column({
+    default: 0,
+  })
   tvl: number;
 
   @Column({
