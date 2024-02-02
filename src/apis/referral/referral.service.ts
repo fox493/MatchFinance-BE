@@ -73,4 +73,21 @@ export class ReferralService {
     await this.referralRepository.save(newReferral);
     return 'Referral relationship created';
   }
+
+  async okxRerralUser(publicAddress: string) {
+    const referral = await this.referralRepository.findOneBy({
+      referred_address: publicAddress,
+    });
+    if (!ethers.isAddress(publicAddress)) {
+      throw new HttpException('Invalid address', 400);
+    }
+    if (referral) {
+      throw new HttpException('Already been referred', 400);
+    }
+    const newReferral = this.referralRepository.create();
+    newReferral.referer_address = process.env.OKX_AIRDROP2_WALLET;
+    newReferral.referred_address = ethers.getAddress(publicAddress);
+    await this.referralRepository.save(newReferral);
+    return 'Referral relationship created';
+  }
 }

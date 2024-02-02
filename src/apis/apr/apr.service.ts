@@ -62,6 +62,18 @@ export class AprService {
     };
   }
 
+  async getAirdropApr() {
+    const dlpApr = await this.redisClient.get('dlpApr');
+    const stethApr = await this.redisClient.get('stethApr');
+    const matchApr = await this.redisClient.get('matchApr');
+    return {
+      dlp: dlpApr ? Number(dlpApr) : 0,
+      steth: stethApr ? Number(stethApr) : 0,
+      match: matchApr ? Number(matchApr) : 0,
+      meslbr: 0,
+    };
+  }
+
   @Cron(CronExpression.EVERY_30_MINUTES)
   async fetchApyData() {
     try {

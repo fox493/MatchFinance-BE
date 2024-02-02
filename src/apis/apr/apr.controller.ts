@@ -10,4 +10,9 @@ export class AprController {
   getApyDate() {
     return this.aprService.getApyData();
   }
+
+  @Get('airdrop')
+  getAirdropApr() {
+    return this.aprService.getAirdropApr();
+  }
 }
