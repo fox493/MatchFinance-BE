@@ -6,6 +6,8 @@ import * as MatchFinancePoolABI from 'src/assets/abis/match_finance_pool.json';
 import * as StethMintPoolABI from 'src/assets/abis/steth_mint_pool.json';
 import * as LiquidityPoolABI from 'src/assets/abis/liquidity_pool.json';
 import * as VLMatchStakingPoolABI from 'src/assets/abis/vlmatch_staking_pool.json';
+import * as MesLbrStakingPoolABI from 'src/assets/abis/meslbr_staking_pool.json';
+import * as TokenABI from 'src/assets/abis/token.json';
 @Injectable()
 export class ContractService {
   public readonly LybraMiningIncentiveContract: ethers.Contract;
@@ -14,6 +16,9 @@ export class ContractService {
   public readonly StethMintPoolContract: ethers.Contract;
   public readonly LiquidityPoolContract: ethers.Contract;
   public readonly VLMatchStakingPoolContract: ethers.Contract;
+  public readonly MesLbrStakingPoolContract: ethers.Contract;
+  public readonly WETHContract: ethers.Contract;
+  public readonly LBRContract: ethers.Contract;
 
   constructor() {
     const provider = new ethers.AlchemyProvider(
@@ -48,6 +53,21 @@ export class ContractService {
     this.VLMatchStakingPoolContract = new ethers.Contract(
       process.env.VLMATCH_STAKING_POOL_CONTRACT,
       VLMatchStakingPoolABI,
+      provider,
+    );
+    this.MesLbrStakingPoolContract = new ethers.Contract(
+      process.env.MESLBR_STAKING_POOL_CONTRACT,
+      MesLbrStakingPoolABI,
+      provider,
+    );
+    this.WETHContract = new ethers.Contract(
+      process.env.WETH_CONTRACT,
+      TokenABI,
+      provider,
+    );
+    this.LBRContract = new ethers.Contract(
+      process.env.LBR_CONTRACT,
+      TokenABI,
       provider,
     );
   }

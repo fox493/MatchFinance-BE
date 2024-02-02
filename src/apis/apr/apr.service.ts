@@ -5,7 +5,7 @@ import puppeteer, { Browser } from 'puppeteer';
 import { RedisClientType } from 'redis';
 import { AccountPoints } from '../airdrop/entities/account_points.entity';
 import { Repository } from 'typeorm';
-import { ethers } from 'ethers';
+import { BigNumberish, ethers } from 'ethers';
 import axios from 'axios';
 import { ContractService } from 'src/contract/contract.service';
 
@@ -47,6 +47,7 @@ export class AprService {
     const dlpApr = await this.redisClient.get('dlpApr');
     const stethApr = await this.redisClient.get('stethApr');
     const matchApr = await this.redisClient.get('matchApr');
+    const meslbrApr = await this.redisClient.get('meslbrApr');
     return {
       apy: apy.split('~')[1],
       total_liquidity,
@@ -58,6 +59,7 @@ export class AprService {
         eth: stethApr,
         dlp: dlpApr,
         match: matchApr,
+        meslbr: meslbrApr,
       },
     };
   }
@@ -66,11 +68,12 @@ export class AprService {
     const dlpApr = await this.redisClient.get('dlpApr');
     const stethApr = await this.redisClient.get('stethApr');
     const matchApr = await this.redisClient.get('matchApr');
+    const meslbrApr = await this.redisClient.get('meslbrApr');
     return {
       dlp: dlpApr ? Number(dlpApr) : 0,
       steth: stethApr ? Number(stethApr) : 0,
       match: matchApr ? Number(matchApr) : 0,
-      meslbr: 0,
+      meslbr: meslbrApr ? Number(meslbrApr) : 0,
     };
   }
 
@@ -183,6 +186,19 @@ export class AprService {
 
     const matchPrice = Number(data['match-token'].usd);
 
+    // 4. meslbr
+    const ethInPool = await this.contractService.WETHContract.balanceOf(
+      '0x3A0eF60e803aae8e94f741E7F61c7CBe9501e569',
+    );
+    const lbrInPool = await this.contractService.LBRContract.balanceOf(
+      '0x3A0eF60e803aae8e94f741E7F61c7CBe9501e569',
+    );
+    const lbrPriceInE =
+      Number(ethers.formatEther(ethInPool)) /
+      Number(ethers.formatEther(lbrInPool));
+
+    const lbrPrice = Number(lbrPriceInE) * stEthPrice;
+
     // steth tvl
     const stethTotal = ethers.formatEther(
       await this.contractService.MatchFinancePoolContract.totalSupplied(
@@ -204,20 +220,47 @@ export class AprService {
     );
     const matchTVL = Number(matchTotal) * Number(data['match-token'].usd);
 
-    console.log('stethTVL', stethTVL, 'dlpTVL', dlpTVL, 'matchTVL', matchTVL);
+    // lbr tvl
+    const lbrTotal = ethers.formatEther(
+      await this.contractService.MesLbrStakingPoolContract.totalStaked(),
+    );
+    const lbrTVL = Number(lbrTotal) * lbrPrice;
+
+    console.log(
+      'stethTVL',
+      stethTVL,
+      'dlpTVL',
+      dlpTVL,
+      'matchTVL',
+      matchTVL,
+      'lbrTotal',
+      lbrTVL,
+    );
 
     const baseApr =
       (((0.01 * 10000000 * matchPrice) /
-        (0.2 * dlpTVL + 0.1 * stethTVL + 0.1 * matchTVL)) *
+        (0.2 * dlpTVL + 0.1 * stethTVL + 0.1 * matchTVL + 0.05 * lbrTVL)) *
         365) /
       42;
 
     const dlpApr = baseApr * 0.2;
     const stethApr = baseApr * 0.1;
     const matchApr = baseApr * 0.1;
+    const meslbrApr = baseApr * 0.05;
+    console.log(
+      'dlpApr',
+      dlpApr,
+      'stethApr',
+      stethApr,
+      'matchApr',
+      matchApr,
+      'meslbrApr',
+      meslbrApr,
+    );
 
     await this.redisClient.set('dlpApr', dlpApr.toFixed(2));
     await this.redisClient.set('stethApr', stethApr.toFixed(2));
     await this.redisClient.set('matchApr', matchApr.toFixed(2));
+    await this.redisClient.set('meslbrApr', meslbrApr.toFixed(2));
   }
 }

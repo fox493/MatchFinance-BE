@@ -97,16 +97,16 @@ export class AirdropService {
           timeout: 10000,
         },
       );
-  
+
       const matchPrice = Number(data['match-token'].usd);
-      
+
       const stETHSuppliedData = await this.getStEthTotalSuppliedTableFromDune();
       const stETHWithdrewData = await this.getStEthWithdrewTableFromDune();
       const lpStakedData = await this.getLpStakedTableFromDune();
       const lpWithdrewData = await this.getLpWithdrewTableFromDune();
       const matchStakedData = await this.getVlmatchStakedTableFromDune();
       const matchUnstakedData = await this.getVlmatchUnstakeTableFromDune();
-      
+
       const accounts: AccountPointsV2[] = [];
       // 1.遍历withdrew表，标记用户是否在空投后提取过资金，这将直接决定分数是否受时间因子影响
       for (let data of lpWithdrewData) {
@@ -769,7 +769,7 @@ export class AirdropService {
 
   async getStEthTotalSuppliedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3142243/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286141/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -777,7 +777,7 @@ export class AirdropService {
 
   async getLpStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3142572/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286144/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -785,7 +785,7 @@ export class AirdropService {
 
   async getStEthWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3146847/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286143/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -793,7 +793,7 @@ export class AirdropService {
 
   async getLpWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3146842/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3286136/results?api_key=${process.env.DUNE_API_KEY}`,
     );
 
     return res.data.result.rows;
@@ -801,14 +801,28 @@ export class AirdropService {
 
   async getVlmatchStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3396494/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401490/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
     return res.data.result.rows;
   }
 
   async getVlmatchUnstakeTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3396496/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401491/results?api_key=${process.env.DUNE_API_KEY_2}`,
+    );
+    return res.data.result.rows;
+  }
+
+  async getMesLbrUnstakeTableFromDune() {
+    const res = await axios.get(
+      `https://api.dune.com/api/v1/query/3401496/results?api_key=${process.env.DUNE_API_KEY_2}`,
+    );
+    return res.data.result.rows;
+  }
+
+  async getMesLbrStakeTableFromDune() {
+    const res = await axios.get(
+      `https://api.dune.com/api/v1/query/3401492/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
     return res.data.result.rows;
   }
