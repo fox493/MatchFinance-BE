@@ -91,6 +91,7 @@ export class AirdropService {
           ),
         );
       }
+
       const { data } = await axios.get(
         'https://api.coingecko.com/api/v3/simple/price?ids=match-token&vs_currencies=usd',
         {
@@ -100,12 +101,26 @@ export class AirdropService {
 
       const matchPrice = Number(data['match-token'].usd);
 
+      const ethInPool = await this.contractService.WETHContract.balanceOf(
+        '0x3A0eF60e803aae8e94f741E7F61c7CBe9501e569',
+      );
+      const lbrInPool = await this.contractService.LBRContract.balanceOf(
+        '0x3A0eF60e803aae8e94f741E7F61c7CBe9501e569',
+      );
+      const lbrPriceInE =
+        Number(ethers.formatEther(ethInPool)) /
+        Number(ethers.formatEther(lbrInPool));
+
+      const lbrPrice = Number(lbrPriceInE) * stEthPrice;
+
       const stETHSuppliedData = await this.getStEthTotalSuppliedTableFromDune();
       const stETHWithdrewData = await this.getStEthWithdrewTableFromDune();
       const lpStakedData = await this.getLpStakedTableFromDune();
       const lpWithdrewData = await this.getLpWithdrewTableFromDune();
       const matchStakedData = await this.getVlmatchStakedTableFromDune();
       const matchUnstakedData = await this.getVlmatchUnstakeTableFromDune();
+      const meslbrStakedData = await this.getMesLbrStakeTableFromDune();
+      const meslbrUnstakedData = await this.getMesLbrUnstakeTableFromDune();
 
       const accounts: AccountPointsV2[] = [];
       // 1.遍历withdrew表，标记用户是否在空投后提取过资金，这将直接决定分数是否受时间因子影响
@@ -144,6 +159,23 @@ export class AirdropService {
         }
       }
       for (let data of matchUnstakedData) {
+        const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        if (timestamp > airdrop_start_time) {
+          const address = data['user'];
+          const account = accounts.find(
+            (account) => account.address === address,
+          );
+          if (account) {
+            account.withdrew_after_airdrp_start = true;
+          } else {
+            const newAccount = new AccountPointsV2();
+            newAccount.address = address;
+            newAccount.withdrew_after_airdrp_start = true;
+            accounts.push(newAccount);
+          }
+        }
+      }
+      for (let data of meslbrUnstakedData) {
         const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
         if (timestamp > airdrop_start_time) {
           const address = data['user'];
@@ -252,6 +284,36 @@ export class AirdropService {
           newAccount.match_unstaked = withdrew;
           newAccount.points =
             -withdrew * timeFactor * timePassedFactor * vlMatchWeight;
+          accounts.push(newAccount);
+        }
+      }
+      for (let data of meslbrUnstakedData) {
+        const address = data['user'];
+        const withdrew = lbrPrice * Number(ethers.formatEther(data['amount']));
+        const now = new Date().getTime() / 1000;
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
+        const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
+        const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
+        const account = accounts.find((account) => account.address === address);
+        if (account) {
+          account.meslbr_unstaked = account.meslbr_unstaked
+            ? account.meslbr_unstaked + withdrew
+            : withdrew;
+          if (account.withdrew_after_airdrp_start) {
+            const points = withdrew * timePassedFactor * mesLbrWeight;
+            account.points = account.points ? account.points - points : -points;
+          } else {
+            const points =
+              withdrew * timeFactor * timePassedFactor * mesLbrWeight;
+            account.points = account.points ? account.points - points : -points;
+          }
+        } else {
+          const newAccount = new AccountPointsV2();
+          newAccount.address = address;
+          newAccount.meslbr_unstaked = withdrew;
+          newAccount.points =
+            -withdrew * timeFactor * timePassedFactor * mesLbrWeight;
           accounts.push(newAccount);
         }
       }
@@ -420,12 +482,73 @@ export class AirdropService {
           // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
           if (timestamp > airdrop_start_time) {
             const timeFactor = this.getTimeFactor(endTime - timestamp);
-            const points = staked * timeFactor * timePassedFactor * dlpWeight;
+            const points =
+              staked * timeFactor * timePassedFactor * vlMatchWeight;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           } else {
             const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
-            const points = staked * timeFactor * timePassedFactor * dlpWeight;
+            const points =
+              staked * timeFactor * timePassedFactor * vlMatchWeight;
+            newAccount.points = points;
+            newAccount.time_factor = timeFactor;
+          }
+          accounts.push(newAccount);
+        }
+      }
+      for (let data of meslbrStakedData) {
+        const timestamp = new Date(data['evt_block_time']).getTime() / 1000;
+        const timePassedFactor = this.getTimePassedFactor(timestamp);
+        const address = data['user'];
+        const staked = lbrPrice * Number(ethers.formatEther(data['amount']));
+        const account = accounts.find((account) => account.address === address);
+        const now = new Date().getTime() / 1000;
+        const endTime = airdrop_end_time > now ? now : airdrop_end_time;
+        if (account) {
+          account.meslbr_staked = account.meslbr_staked
+            ? account.meslbr_staked + staked
+            : staked;
+
+          if (account.withdrew_after_airdrp_start) {
+            const points = staked * timePassedFactor * mesLbrWeight;
+            account.points = account.points ? account.points + points : points;
+          } else {
+            // 判断存款发生在空投开始前后
+            if (timestamp > airdrop_start_time) {
+              const timeFactor = this.getTimeFactor(endTime - timestamp);
+              const points =
+                staked * timeFactor * timePassedFactor * mesLbrWeight;
+              account.points = account.points
+                ? account.points + points
+                : points;
+              account.time_factor = timeFactor;
+            } else {
+              const timeFactor = this.getTimeFactor(
+                endTime - airdrop_start_time,
+              );
+              const points =
+                staked * timeFactor * timePassedFactor * mesLbrWeight;
+              account.points = account.points
+                ? account.points + points
+                : points;
+              account.time_factor = timeFactor;
+            }
+          }
+        } else {
+          const newAccount = new AccountPointsV2();
+          newAccount.address = address;
+          newAccount.meslbr_staked = staked;
+          // 用户不存在，说明之前没有提款记录，直接判断该笔存款的时间
+          if (timestamp > airdrop_start_time) {
+            const timeFactor = this.getTimeFactor(endTime - timestamp);
+            const points =
+              staked * timeFactor * timePassedFactor * mesLbrWeight;
+            newAccount.points = points;
+            newAccount.time_factor = timeFactor;
+          } else {
+            const timeFactor = this.getTimeFactor(endTime - airdrop_start_time);
+            const points =
+              staked * timeFactor * timePassedFactor * mesLbrWeight;
             newAccount.points = points;
             newAccount.time_factor = timeFactor;
           }
@@ -440,7 +563,9 @@ export class AirdropService {
           (account.lp_withdrew || 0) -
           (account.steth_withdrew || 0) +
           (account.match_staked || 0) -
-          (account.match_unstaked || 0);
+          (account.match_unstaked || 0) +
+          (account.meslbr_staked || 0) -
+          (account.meslbr_unstaked || 0);
         const tvlFactor = this.getTVLFactor(account.tvl);
 
         // 如果用户有被邀请记录，就代表用户填写过邀请码，那么用户将获得邀请boost
@@ -769,7 +894,7 @@ export class AirdropService {
 
   async getStEthTotalSuppliedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286141/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401540/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
 
     return res.data.result.rows;
@@ -777,7 +902,7 @@ export class AirdropService {
 
   async getLpStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286144/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401535/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
 
     return res.data.result.rows;
@@ -785,7 +910,7 @@ export class AirdropService {
 
   async getStEthWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286143/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401536/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
 
     return res.data.result.rows;
@@ -793,7 +918,7 @@ export class AirdropService {
 
   async getLpWithdrewTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3286136/results?api_key=${process.env.DUNE_API_KEY}`,
+      `https://api.dune.com/api/v1/query/3401541/results?api_key=${process.env.DUNE_API_KEY_2}`,
     );
 
     return res.data.result.rows;
@@ -801,28 +926,28 @@ export class AirdropService {
 
   async getVlmatchStakedTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3401490/results?api_key=${process.env.DUNE_API_KEY_2}`,
+      `https://api.dune.com/api/v1/query/3401490/results?api_key=${process.env.DUNE_API_KEY}`,
     );
     return res.data.result.rows;
   }
 
   async getVlmatchUnstakeTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3401491/results?api_key=${process.env.DUNE_API_KEY_2}`,
+      `https://api.dune.com/api/v1/query/3401491/results?api_key=${process.env.DUNE_API_KEY}`,
     );
     return res.data.result.rows;
   }
 
   async getMesLbrUnstakeTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3401496/results?api_key=${process.env.DUNE_API_KEY_2}`,
+      `https://api.dune.com/api/v1/query/3401496/results?api_key=${process.env.DUNE_API_KEY}`,
     );
     return res.data.result.rows;
   }
 
   async getMesLbrStakeTableFromDune() {
     const res = await axios.get(
-      `https://api.dune.com/api/v1/query/3401492/results?api_key=${process.env.DUNE_API_KEY_2}`,
+      `https://api.dune.com/api/v1/query/3401492/results?api_key=${process.env.DUNE_API_KEY}`,
     );
     return res.data.result.rows;
   }

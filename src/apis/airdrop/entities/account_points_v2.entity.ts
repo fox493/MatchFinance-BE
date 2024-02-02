@@ -7,33 +7,51 @@ export class AccountPointsV2 {
 
   @Column({
     default: 0,
+    type: 'double',
   })
   steth_supplied: number;
 
   @Column({
     default: 0,
+    type: 'double',
   })
   steth_withdrew: number;
 
   @Column({
     default: 0,
+    type: 'double',
   })
   lp_staked: number;
 
   @Column({
     default: 0,
+    type: 'double',
   })
   lp_withdrew: number;
 
   @Column({
     default: 0,
+    type: 'double',
   })
   match_staked: number;
 
   @Column({
     default: 0,
+    type: 'double',
   })
   match_unstaked: number;
+
+  @Column({
+    default: 0,
+    type: 'double',
+  })
+  meslbr_staked: number;
+
+  @Column({
+    default: 0,
+    type: 'double',
+  })
+  meslbr_unstaked: number;
 
   @Column({
     default: 0,
@@ -47,7 +65,7 @@ export class AccountPointsV2 {
   })
   withdrew_after_airdrp_start: boolean;
 
-  @Column({type: 'int', default: 0})
+  @Column({ type: 'int', default: 0 })
   base_points: number;
 
   @Column({ type: 'int', default: 0 })
